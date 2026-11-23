@@ -1,0 +1,9 @@
+{
+    "IdentityAccess": true,
+    "Accounting": true,
+    "Customers": false,
+    "Sales": false,
+    "Expenses": false,
+    "Inventory": false,
+    "Users": true
+}

@@ -1,0 +1,16 @@
+{
+    "name": "nwidart/identityaccess",
+    "description": "Authentication and identity access module.",
+    "autoload": {
+        "psr-4": {
+            "Modules\\IdentityAccess\\": "app/",
+            "Modules\\IdentityAccess\\Database\\Factories\\": "database/factories/",
+            "Modules\\IdentityAccess\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\IdentityAccess\\Tests\\": "tests/"
+        }
+    }
+}

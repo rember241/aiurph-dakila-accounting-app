@@ -1,0 +1,11 @@
+{
+    "name": "IdentityAccess",
+    "alias": "identityaccess",
+    "description": "Authentication and identity boundary for the ERP API.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\IdentityAccess\\Providers\\IdentityAccessServiceProvider"
+    ],
+    "files": []
+}

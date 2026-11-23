@@ -1,0 +1,33 @@
+// Type Imports
+import type { ChildrenType } from '@core/types'
+
+// Component Imports
+import Providers from '@components/Providers'
+import BlankLayout from '@layouts/BlankLayout'
+
+// Util Imports
+import { getSystemMode } from '@core/utils/serverHelpers'
+
+type Props = ChildrenType
+
+const Layout = async (props: Props) => {
+  const { children } = props
+
+  // Type guard to ensure lang is a valid Locale
+
+  // Vars
+  const direction = 'ltr'
+  const systemMode = await getSystemMode()
+
+  return (
+
+    // withTenantAccess={false} — no session exists here; suppresses the
+    // client-side useCurrentTenantAccessQuery that would fire spuriously
+    // if a stale current_tenant_id cookie is present from a previous session.
+    <Providers direction={direction} withTenantAccess={false}>
+      <BlankLayout systemMode={systemMode}>{children}</BlankLayout>
+    </Providers>
+  )
+}
+
+export default Layout
