@@ -27,7 +27,7 @@ import type {
 } from '@/features/(protected)/accounting/setup/fund-sources/model/fund-sources.types'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import FundSourceSearch from '@views/(protected)/accounting/setup/fund-sources/components/FundSourceSearch'
-import FundSourceFilter from '@views/(protected)/accounting/setup/fund-sources/components/FundSourceFilter'
+import FilterTabs, { ACTIVE_STATUS_FILTERS } from '@components/app/FilterTabs'
 import PromptUserCard from '@components/app/Accounting/PromptUserCard'
 
 function FundSourcesPage() {
@@ -169,6 +169,8 @@ function FundSourcesPage() {
     }
   }
 
+  const filtersDisabled = fundSources?.data?.data?.length === 0 && !areFiltersApplied
+
   return (
     <>
       {/* Toast Notification */}
@@ -216,16 +218,20 @@ function FundSourcesPage() {
         />
       </CustomDrawer>
 
-      {/* Search and Filter Section */}
-      <Paper sx={{ mb: 5, p: 5, gap: 5, display: 'flex', alignItems: 'center' }}>
-        <FundSourceSearch
-          disabled={fundSources?.data?.data?.length === 0 && !areFiltersApplied}
-          setSearchText={setSearchText}
+      <Paper sx={{ mb: 5, pt: 2 }}>
+        <FilterTabs
+          label='Fund source status'
+          value={status}
+          onChange={setStatus}
+          options={ACTIVE_STATUS_FILTERS}
+          disabled={filtersDisabled}
         />
-        <FundSourceFilter
-          disabled={fundSources?.data?.data?.length === 0 && !areFiltersApplied}
-          setFundStatus={setStatus}
-        />
+        <div className='p-5'>
+          <FundSourceSearch
+            disabled={filtersDisabled}
+            setSearchText={setSearchText}
+          />
+        </div>
       </Paper>
 
       {fundSources?.data?.data?.length === 0 && !areFiltersApplied ? (

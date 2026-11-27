@@ -5,9 +5,16 @@ import { APP_ABILITIES } from '@/features/auth/access/model/access.schema'
 const verticalMenuData = (): VerticalMenuDataType[] => [
   // Overview
   {
-    label: 'Dashboard',
+    label: 'Overview',
     href: '/home',
     icon: 'bx-home-circle',
+    requiredAbilities: [APP_ABILITIES.accountingRead]
+  },
+
+  {
+    label: 'General Ledger',
+    href: '/accounting/books/ledger',
+    icon: 'bx-book',
     requiredAbilities: [APP_ABILITIES.accountingRead]
   },
 
@@ -15,7 +22,6 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
   {
     label: 'Accounting Setup',
     icon: 'bx-slider-alt',
-    defaultOpen: true,
     children: [
       {
         label: 'Chart of Accounts',
@@ -75,31 +81,17 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     ]
   },
 
-  // Books & Verification
-  {
-    label: 'Books & Verification',
-    icon: 'bx-book-open',
-    children: [
-      {
-        label: 'General Ledger',
-        href: '/accounting/books/ledger',
-        icon: 'bx-book',
-        requiredAbilities: [APP_ABILITIES.accountingRead]
-      },
-      {
-        label: 'Trial Balance',
-        href: '/accounting/reports/trial-balance',
-        icon: 'bx-spreadsheet',
-        requiredAbilities: [APP_ABILITIES.accountingRead]
-      }
-    ]
-  },
-
   // Financial Reports
   {
     label: 'Financial Reports',
     icon: 'bx-bar-chart-alt-2',
     children: [
+      {
+        label: 'Trial Balance',
+        href: '/accounting/reports/trial-balance',
+        icon: 'bx-spreadsheet',
+        requiredAbilities: [APP_ABILITIES.accountingRead]
+      },
       {
         label: 'Income Statement',
         href: '/accounting/reports/income-statement',

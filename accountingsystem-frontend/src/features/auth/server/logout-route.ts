@@ -68,7 +68,8 @@ async function invalidateBackendSession(request: Request) {
     await fetch(`${BASE}/api/logout`, {
       method: 'POST',
       headers,
-      cache: 'no-store'
+      cache: 'no-store',
+      signal: AbortSignal.timeout(3_000)
     })
   } catch {
     // Best effort. Browser-facing cookie deletion below is the critical part.

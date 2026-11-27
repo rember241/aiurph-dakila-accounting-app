@@ -1,3 +1,4 @@
+import CustomPageHeader from '@components/app/CustomPageHeader'
 import { APP_ABILITIES } from '@/features/auth/access/model/access.schema'
 import { AccessDeniedState } from '@/views/shared/AccessDeniedState'
 import { serverCan } from '@/lib/server-access'
@@ -14,5 +15,5 @@ export default async function Page() {
     )
   }
 
-  return <h1>Closing Period</h1>
+  return <CustomPageHeader title='Closing Period' />
 }

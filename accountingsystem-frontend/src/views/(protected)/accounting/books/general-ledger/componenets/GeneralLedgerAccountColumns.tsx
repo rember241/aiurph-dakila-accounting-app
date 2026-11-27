@@ -95,6 +95,8 @@ function getAccountColumns(actions: {
     {
       field: 'balance',
       headerName: 'ENDING BALANCE',
+      headerAlign: 'center',
+      align: 'center',
       type: 'number',
       flex: 1,
       sortable: true,
@@ -104,7 +106,12 @@ function getAccountColumns(actions: {
         const textColor = row.balance > 0 ? 'success.main' : row.balance < 0 ? 'error.main' : 'text.secondary'
 
         return (
-          <Typography variant='body2' fontWeight={700} color={textColor}>
+          <Typography
+            variant='body2'
+            fontWeight={700}
+            color={textColor}
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
+          >
             {currencyFormatter.format(row.balance)}
           </Typography>
         )

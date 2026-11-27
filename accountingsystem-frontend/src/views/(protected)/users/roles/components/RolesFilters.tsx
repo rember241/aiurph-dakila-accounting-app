@@ -7,6 +7,7 @@ import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import Box from '@mui/material/Box'
 
+import FilterTabs from '@components/app/FilterTabs'
 import CustomTextField from '@core/components/mui/TextField'
 
 import type {
@@ -14,6 +15,12 @@ import type {
   RoleOrgUnitOption,
   RoleStatus
 } from '@/features/(protected)/users/roles/model/roles.types'
+
+const roleStatuses = [
+  { value: '', label: 'All Statuses', icon: 'bx-list-ul' },
+  { value: 'enabled', label: 'Active', icon: 'bx-check-circle' },
+  { value: 'disabled', label: 'Inactive', icon: 'bx-minus-circle' }
+] as const
 
 type RolesFiltersProps = {
   searchValue: string
@@ -45,8 +52,9 @@ function RolesFilters({
   canCreateRole = true
 }: RolesFiltersProps) {
   return (
-    <Paper sx={{ mb: 3, p: 5 }}>
-      <Stack spacing={3}>
+    <Paper sx={{ mb: 3, pt: 2 }}>
+      <FilterTabs label='Role status' value={statusValue} onChange={onStatusChange} options={roleStatuses} />
+      <Stack spacing={3} sx={{ p: 5 }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
             <i className='bx bx-search' style={{ fontSize: 22 }} />
@@ -76,20 +84,6 @@ function RolesFilters({
         </Stack>
 
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <FormControl fullWidth size='small'>
-            <InputLabel id='role-status-filter-label'>Status</InputLabel>
-            <Select
-              labelId='role-status-filter-label'
-              label='Status'
-              value={statusValue}
-              onChange={event => onStatusChange(event.target.value as RoleStatus | '')}
-            >
-              <MenuItem value=''>All Statuses</MenuItem>
-              <MenuItem value='enabled'>Active</MenuItem>
-              <MenuItem value='disabled'>Inactive</MenuItem>
-            </Select>
-          </FormControl>
-
           <FormControl fullWidth size='small'>
             <InputLabel id='role-access-filter-label'>Access</InputLabel>
             <Select

@@ -3,6 +3,14 @@ import { z } from 'zod'
 import { zUuid } from '@/lib/schemas/uuid'
 
 export type CoreType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
+export const ACCOUNT_CATEGORY_FILTERS = [
+  { value: 'bank', label: 'Bank', icon: 'bx-bxs-bank' },
+  { value: 'credit_card', label: 'Credit Card', icon: 'bx-credit-card' },
+  { value: 'undeposited_cash', label: 'Undeposited Cash', icon: 'bx-money' }
+] as const
+
+export type AccountCategory = (typeof ACCOUNT_CATEGORY_FILTERS)[number]['value']
+export type AccountFilter = CoreType | AccountCategory | ''
 export type AccountStatus = 'active' | 'inactive'
 export type Contra = boolean
 export type NormalBalance = 'debit' | 'credit'

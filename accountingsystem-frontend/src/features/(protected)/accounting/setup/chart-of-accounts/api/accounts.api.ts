@@ -6,6 +6,7 @@ import type {
   Paginated,
   AccountColumn,
   CoreType,
+  AccountCategory,
   AccountStatus,
   AccountUpsertPayload,
   AccountStatsResponse,
@@ -22,6 +23,7 @@ import {
 export type AccountsQuery = {
   q?: string
   type?: CoreType | ''
+  category?: AccountCategory
   status?: AccountStatus | ''
   is_posting?: boolean
   nested?: boolean
@@ -36,6 +38,7 @@ function toParams(q: AccountsQuery) {
 
   if (q.q) p.set('q', q.q)
   if (q.type) p.set('type', q.type)
+  if (q.category) p.set('category', q.category)
   if (q.status) p.set('status', q.status)
   if (q.is_posting !== undefined) p.set('is_posting', q.is_posting.toString())
   if (q.nested !== undefined) p.set('nested', q.nested.toString())

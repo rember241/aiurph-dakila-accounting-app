@@ -1,23 +1,12 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig, isAxiosError, isCancel } from 'axios'
 
-import { reportSessionStatus } from '@/features/auth/model/session-status'
+import { parseSessionWindow, reportSessionWindow, reportSessionStatus } from '@/features/auth/model/session-status'
 
 // Send cookies through the page's own origin. Only the Next.js server needs
 // the backend address; browser privacy settings and LAN host changes must not
 // split the CSRF bootstrap and login across different origins.
 const baseURL = '/api/laravel'
 
-import {
-  CURRENT_TENANT_COOKIE,
-  parseCurrentTenantId
-} from '@/features/(protected)/users/tenants/model/current-tenant.schema'
-
-/**
- * Browser-side axios client used by the authenticated ERP screens.
- *
- * The backend still accepts legacy tenant/company headers, so requests attach
- * the current company cookie until the single-company cleanup is finished.
- */
 export const laravelBrowserClient = axios.create({
   baseURL,
   withCredentials: true,
@@ -39,20 +28,19 @@ function readBrowserCookie(name: string): string | null {
     .map(v => v.trim())
     .find(v => v.startsWith(`${name}=`))
 
-  return match ? decodeURIComponent(match.slice(name.length + 1)) : null
+  if (!match) return null
+
+  try {
+    return decodeURIComponent(match.slice(name.length + 1))
+  } catch {
+    return null
+  }
 }
 
 type RecoverableRequest = InternalAxiosRequestConfig & { csrfRetried?: boolean }
 let csrfRequest: Promise<void> | null = null
 
 laravelBrowserClient.interceptors.request.use(config => {
-  const tenantId = parseCurrentTenantId(readBrowserCookie(CURRENT_TENANT_COOKIE))
-
-  if (tenantId) {
-    config.headers.set('X-Tenant-ID', tenantId)
-    config.headers.set('X-Company-ID', tenantId)
-  }
-
   // Belt-and-braces CSRF: axios's built-in withXSRFToken handling can misbehave
   // on cross-origin requests in some browsers (different port counts as cross-
   // origin even when host matches). Read the XSRF-TOKEN cookie ourselves and
@@ -61,16 +49,19 @@ laravelBrowserClient.interceptors.request.use(config => {
   // state-changing methods.
   const xsrfToken = readBrowserCookie('XSRF-TOKEN')
 
-  if (xsrfToken) {
-    config.headers.set('X-XSRF-TOKEN', xsrfToken)
-  }
+  config.headers.set('X-XSRF-TOKEN', xsrfToken)
 
   return config
 })
 
 laravelBrowserClient.interceptors.response.use(
   response => {
-    reportSessionStatus('available')
+    const sessionWindow = parseSessionWindow(
+      response.headers['x-session-expires-at'],
+      response.headers['x-session-warning-seconds']
+    )
+
+    if (sessionWindow) reportSessionWindow(sessionWindow)
 
     return response
   },
@@ -87,15 +78,27 @@ laravelBrowserClient.interceptors.response.use(
     // that token once; never replay mutations after network errors or 5xx.
     if (status === 419 && config && !config.csrfRetried && !isCsrfRequest) {
       config.csrfRetried = true
-      await bootstrapLaravelCsrf()
+
+      try {
+        await bootstrapLaravelCsrf()
+      } catch (bootstrapError) {
+        if (!isAuthRequest && isAxiosError(bootstrapError) &&
+            (!bootstrapError.response || bootstrapError.response.status >= 500)) {
+          reportSessionStatus('unavailable')
+        }
+
+        throw bootstrapError
+      }
 
       return laravelBrowserClient.request(config)
     }
 
-    if (!error.response || (status != null && status >= 500)) {
-      reportSessionStatus('unavailable')
-    } else if (status === 401 && !isAuthRequest && !isCsrfRequest) {
-      reportSessionStatus('expired')
+    if (!isAuthRequest && !isCsrfRequest) {
+      if (!error.response || (status != null && status >= 500)) {
+        reportSessionStatus('unavailable')
+      } else if (status === 401) {
+        reportSessionStatus('expired')
+      }
     }
 
     // Authentication failures must never invoke logout or delete cookies.

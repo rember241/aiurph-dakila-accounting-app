@@ -26,6 +26,14 @@ final class LoginUserAction
      */
     public function execute(LoginRequest $request): User
     {
+        if (! $request->hasSession()) {
+            throw ValidationException::withMessages([
+                'session' => [
+                    'Login session could not be started. Open the ERP through the configured app URL and make sure it is included in SANCTUM_STATEFUL_DOMAINS.',
+                ],
+            ])->status(419);
+        }
+
         $this->ensureIsNotRateLimited($request);
 
         if (! Auth::guard('web')->attempt(
@@ -69,18 +77,6 @@ final class LoginUserAction
         }
 
         $user->forceFill(['last_active_at' => now()])->save();
-
-        if (! $request->hasSession()) {
-            Auth::guard('web')->logout();
-
-            throw ValidationException::withMessages([
-                'session' => [
-                    'Login session could not be started. Open the ERP through the configured app URL and make sure it is included in SANCTUM_STATEFUL_DOMAINS.',
-                ],
-            ])->status(419);
-        }
-
-        $request->session()->regenerate();
 
         return $user;
     }

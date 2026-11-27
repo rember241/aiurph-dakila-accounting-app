@@ -21,9 +21,6 @@ const Layout = async (props: Props) => {
 
   return (
 
-    // withTenantAccess={false} — no session exists here; suppresses the
-    // client-side useCurrentTenantAccessQuery that would fire spuriously
-    // if a stale current_tenant_id cookie is present from a previous session.
     <Providers direction={direction} withTenantAccess={false}>
       <BlankLayout systemMode={systemMode}>{children}</BlankLayout>
     </Providers>

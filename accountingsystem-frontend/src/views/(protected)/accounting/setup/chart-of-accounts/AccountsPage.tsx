@@ -27,9 +27,13 @@ import {
 import type {
   AccountColumn,
   AccountStatus,
-  CoreType,
+  AccountFilter,
   AccountPosting,
   AccountTreeNode
+} from '@/features/(protected)/accounting/setup/chart-of-accounts/model/accounts.types'
+import {
+  ACCOUNT_CATEGORY_FILTERS,
+  ACCOUNT_CORE_TYPE_ORDER
 } from '@/features/(protected)/accounting/setup/chart-of-accounts/model/accounts.types'
 import {
   toDefaultValues,
@@ -163,7 +167,9 @@ export function AccountsPage() {
   const [q, setQ] = useState('')
   const qDebounced = useDebouncedValue(q, 400)
 
-  const [type, setType] = useState<CoreType | ''>('')
+  const [accountFilter, setAccountFilter] = useState<AccountFilter>('')
+  const type = ACCOUNT_CORE_TYPE_ORDER.find(coreType => coreType === accountFilter)
+  const category = ACCOUNT_CATEGORY_FILTERS.find(option => option.value === accountFilter)?.value
   const [status, setStatus] = useState<AccountStatus | ''>('')
   const [posting, setPosting] = useState<AccountPosting>()
   const [viewMode, setViewMode] = useState<'table' | 'tree'>('table')
@@ -175,6 +181,7 @@ export function AccountsPage() {
   const accounts = useAccountsQuery({
     q: qDebounced.toLowerCase(),
     type,
+    category,
     status,
     is_posting: posting,
     page: paginationModel.page,
@@ -187,6 +194,7 @@ export function AccountsPage() {
     {
       q: qDebounced.toLowerCase(),
       type,
+      category,
       status,
       is_posting: posting
     },
@@ -230,7 +238,7 @@ export function AccountsPage() {
 
   useEffect(() => {
     setPaginationModel(prev => ({ ...prev, page: 0 }))
-  }, [qDebounced, type, status, posting, primarySort?.field, primarySort?.sort])
+  }, [qDebounced, status, posting, primarySort?.field, primarySort?.sort])
 
   const defaultValues = useMemo(() => toDefaultValues(editing ?? undefined), [editing])
 
@@ -355,8 +363,11 @@ export function AccountsPage() {
         onPostingChange={setPosting}
         searchValue={q}
         onSearchChange={setQ}
-        typeValue={type}
-        onTypeChange={setType}
+        accountFilter={accountFilter}
+        onAccountFilterChange={value => {
+          setAccountFilter(value)
+          setPaginationModel(previous => ({ ...previous, page: 0 }))
+        }}
         onClick={openCreate}
         canCreateAccount={canCreateAccounts}
       />

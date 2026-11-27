@@ -6,6 +6,8 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
+use Modules\Accounting\Database\Seeders\CoaAccountTypeSeeder;
+use Modules\Accounting\Database\Seeders\CoaDetailTypeSeeder;
 use Modules\Accounting\Models\ChartOfAccounts\Account;
 use Modules\Accounting\Models\FundSources\FundSource;
 use Modules\Accounting\Models\JournalEntries\JournalEntry;
@@ -99,6 +101,70 @@ class ChartOfAccountsTenantScopingApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.total', 1)
             ->assertJsonPath('data.active', 1);
+    }
+
+
+    public function test_account_category_filters_work_in_table_and_tree_views(): void
+    {
+        $user = $this->actingAsUserWithAbilities(['accounting.read']);
+        $tenant = $this->createTenant($user, 'account-category');
+        $otherTenant = $this->createTenant(User::factory()->create(), 'other-account-category');
+
+        $this->seed([CoaAccountTypeSeeder::class, CoaDetailTypeSeeder::class]);
+        $detailIds = DB::table('detail_types')->pluck('id', 'code');
+
+        $parent = Account::factory()->create([
+            'company_id' => $tenant->getKey(),
+            'tenant_id' => $tenant->getKey(),
+            'name' => 'Current Assets',
+            'type' => 'asset',
+            'is_posting' => false,
+        ]);
+
+        $expected = [];
+        foreach ([
+            ['Operating Account', 'asset', 'bank-accounts', 'bank'],
+            ['CIB-Reserve Account', 'asset', 'cash-on-hand-and-in-banks', 'bank'],
+            ['Corporate Visa', 'liability', 'credit-card', 'credit_card'],
+            ['Receipts Awaiting Deposit', 'asset', 'undeposited-cash', 'undeposited_cash'],
+            ['Undeposited Funds', 'asset', null, 'undeposited_cash'],
+            ['Petty Cash', 'asset', 'cash-on-hand-and-in-banks', null],
+            ['Credit Card', 'expense', null, null],
+        ] as $index => [$name, $type, $detailCode, $category]) {
+            $account = Account::factory()->create([
+                'company_id' => $tenant->getKey(),
+                'tenant_id' => $tenant->getKey(),
+                'code' => (string) (9000 + $index),
+                'name' => $name,
+                'type' => $type,
+                'parent_id' => $type === 'asset' ? $parent->getKey() : null,
+                'detail_type_id' => $detailCode ? $detailIds[$detailCode] : null,
+                'status' => 'active',
+            ]);
+
+            if ($category) {
+                $expected[$category][] = (string) $account->getKey();
+            }
+        }
+
+        Account::factory()->create([
+            'company_id' => $otherTenant->getKey(),
+            'tenant_id' => $otherTenant->getKey(),
+            'name' => 'Undeposited Funds',
+            'type' => 'asset',
+        ]);
+
+        foreach ($expected as $category => $ids) {
+            foreach (['', '&nested=true'] as $view) {
+                $response = $this->getJson("/api/v1/accounts?category={$category}&status=active{$view}")
+                    ->assertOk()
+                    ->assertJsonPath('total', count($ids));
+
+                $this->assertEqualsCanonicalizing($ids, array_column($response->json('data'), 'id'));
+            }
+        }
+
+        $this->getJson('/api/v1/accounts?category=unknown')->assertJsonValidationErrors('category');
     }
 
     public function test_account_type_sort_uses_canonical_accounting_order(): void

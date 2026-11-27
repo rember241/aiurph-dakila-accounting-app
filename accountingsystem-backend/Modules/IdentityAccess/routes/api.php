@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\IdentityAccess\Routes;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Modules\IdentityAccess\Http\Controllers\Auth\CurrentUserController;
 use Modules\IdentityAccess\Http\Controllers\Auth\LoginController;
@@ -53,3 +54,12 @@ Route::post('logout', LogoutController::class)
 Route::get('me', CurrentUserController::class)
     ->middleware('auth:sanctum')
     ->name('me');
+
+Route::post('session/extend', function (Request $request) {
+    abort_unless($request->hasSession(), 401);
+
+    // StartSession persists the authenticated session after this response.
+    return response()->noContent()->header('Cache-Control', 'private, no-store');
+})
+    ->middleware('auth:web')
+    ->name('session.extend');

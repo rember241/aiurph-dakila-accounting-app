@@ -4,9 +4,6 @@ import React from 'react'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-import SessionStatusNotice from '@/features/auth/components/SessionStatusNotice'
-
-
 export default function QueryProvider({ children }: { children: React.ReactNode }) {
   const [client] = React.useState(
     () =>
@@ -26,5 +23,5 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
       })
   )
 
-  return <QueryClientProvider client={client}><SessionStatusNotice />{children}</QueryClientProvider>
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>
 }

@@ -5,6 +5,7 @@ namespace Modules\Accounting\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\Accounting\Support\AccountCategoryDetailTypes;
 
 class CoaDetailTypeSeeder extends Seeder
 {
@@ -13,6 +14,7 @@ class CoaDetailTypeSeeder extends Seeder
         $detailsByType = [
             'Assets' => [
                 'Cash on hand and in banks',
+                ...AccountCategoryDetailTypes::ASSET_DETAILS,
                 'Receivables',
                 'Prepayments and Other Current Assets',
                 'Advances',
@@ -21,6 +23,7 @@ class CoaDetailTypeSeeder extends Seeder
             ],
             'Liabilities' => [
                 'Payables',
+                ...AccountCategoryDetailTypes::LIABILITY_DETAILS,
                 'Deferred Income',
                 'Deposit',
             ],

@@ -14,12 +14,12 @@ import type { NavSearchEntry } from '@/features/navigation/model/nav-search.type
 export const NAV_SEARCH_CATALOG: NavSearchEntry[] = [
   {
     id: 'dashboard',
-    label: 'Dashboard',
+    label: 'Overview',
     description: 'Accounting overview and financial position.',
     href: '/home',
     icon: 'bx-home-circle',
     section: 'Accounting',
-    keywords: ['dashboard', 'home'],
+    keywords: ['dashboard', 'home', 'business overview'],
     requiredAbilities: [APP_ABILITIES.accountingRead]
   },
   {

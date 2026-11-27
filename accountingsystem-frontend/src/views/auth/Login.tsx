@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // MUI Imports
 import Typography from '@mui/material/Typography'
@@ -27,36 +27,28 @@ import { useLoginMutation } from '@/features/auth/api/auth.queries'
 
 // Component Imports
 import Link from '@components/Link'
+import PageTitle from '@components/app/PageTitle'
 import CustomTextField from '@core/components/mui/TextField'
 
-import { fetchCurrentTenant } from '@/features/(protected)/users/tenants/api/current-tenant.api'
-import {
-  CURRENT_TENANT_COOKIE,
-  CURRENT_TENANT_COOKIE_MAX_AGE
-} from '@/features/(protected)/users/tenants/model/current-tenant.schema'
-import { DEFAULT_PROTECTED_REDIRECT, loginInputSchema } from '@/features/auth/model/auth.schema'
+import { CURRENT_TENANT_COOKIE } from '@/features/(protected)/users/tenants/model/current-tenant.schema'
+import { DEFAULT_PROTECTED_REDIRECT } from '@/features/auth/model/auth-routes'
+import { loginInputSchema } from '@/features/auth/model/auth.schema'
 import { extractLaravelErrorMessage } from '@/lib/axios/auth/laravel-browser-client'
 
 type LoginFormValues = z.infer<typeof loginInputSchema>
 type FormStatus = { type: 'error' | 'success'; message: string } | null
 
-function getPostLoginRedirectUrl() {
-  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL
-
-  if (!configuredAppUrl) return DEFAULT_PROTECTED_REDIRECT
-
-  try {
-    return new URL(DEFAULT_PROTECTED_REDIRECT, configuredAppUrl).toString()
-  } catch {
-    return DEFAULT_PROTECTED_REDIRECT
-  }
-}
-
 const Login = () => {
   // States
+  const [ready, setReady] = useState(false)
   const [isPasswordShown, setIsPasswordShown] = useState(false)
   const [formStatus, setFormStatus] = useState<FormStatus>(null)
   const loginMutation = useLoginMutation()
+  const submitting = useRef(false)
+
+  useEffect(() => {
+    setReady(true)
+  }, [])
 
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
 
@@ -73,6 +65,9 @@ const Login = () => {
   })
 
   const onSubmit = handleSubmit(async values => {
+    if (submitting.current) return
+
+    submitting.current = true
     clearErrors('root')
     setFormStatus(null)
 
@@ -80,34 +75,14 @@ const Login = () => {
       await loginMutation.mutateAsync(values)
       setFormStatus({ type: 'success', message: 'Login successful. Redirecting...' })
 
-      // Bootstrap the current_tenant_id cookie so that server-rendered pages
-      // can attach X-Company-ID to Laravel requests immediately on first load.
-      // Without this cookie, server components have no tenant context and the
-      // user lands on /settings/user instead of their actual dashboard.
-      try {
-        const tenant = await fetchCurrentTenant()
+      // Laravel resolves the company from the new session.
+      document.cookie = `${CURRENT_TENANT_COOKIE}=; path=/; max-age=0`
 
-        if (tenant.data.tenantId) {
-          document.cookie = [
-            `${CURRENT_TENANT_COOKIE}=${tenant.data.tenantId}`,
-            'path=/',
-            `max-age=${CURRENT_TENANT_COOKIE_MAX_AGE}`,
-            'samesite=lax'
-          ].join('; ')
-        }
-      } catch {
-        // Non-fatal — the user can still log in, they may just land on /settings/user.
-      }
-
-      // Hard-navigate instead of router.replace so the App Router does NOT
-      // send an RSC request for the current route (/login) as part of the
-      // (public) → (protected) route-group boundary switch. That RSC request
-      // hits the middleware, which sees the freshly-set session cookie and
-      // issues a 307 redirect back to /home — producing a spurious second
-      // GET /home in the dev terminal. window.location.replace bypasses the
-      // RSC machinery entirely: one clean full-page load, one GET /home 200.
-      window.location.replace(getPostLoginRedirectUrl())
+      // Keep the first page load on the origin that received the session cookie.
+      window.location.replace(DEFAULT_PROTECTED_REDIRECT)
     } catch (err) {
+      submitting.current = false
+
       const message = extractLaravelErrorMessage(err, 'Login failed')
 
       setError('root', { type: 'server', message })
@@ -157,14 +132,12 @@ const Login = () => {
           </Stack>
 
           <Stack spacing={1}>
-            <Typography variant='h3'>
-              <strong>Welcome back</strong>
-            </Typography>
+            <PageTitle title='Welcome back' icon='bx-log-in-circle' />
 
             <Typography color='text.secondary'>Enter your details to continue to your accounting workspace.</Typography>
           </Stack>
 
-          <Stack component='form' spacing={4} noValidate autoComplete='off' onSubmit={onSubmit}>
+          <Stack component='form' method='post' spacing={4} noValidate autoComplete='off' onSubmit={onSubmit}>
             {formStatus && (
               <Alert
                 severity={formStatus.type}
@@ -234,7 +207,7 @@ const Login = () => {
                 Forgot password?
               </Typography>
             </Box>
-            <Button loading={loginMutation.isPending} fullWidth variant='contained' type='submit'>
+            <Button disabled={!ready || formStatus?.type === 'success'} loading={loginMutation.isPending} fullWidth variant='contained' type='submit'>
               {loginMutation.isPending ? 'Logging in...' : 'Login'}
             </Button>
           </Stack>

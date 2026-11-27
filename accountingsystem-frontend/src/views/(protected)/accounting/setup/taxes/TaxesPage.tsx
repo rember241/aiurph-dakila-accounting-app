@@ -27,7 +27,7 @@ import type {
   TaxStatus,
   TaxSubmitValues
 } from '@/features/(protected)/accounting/setup/taxes/model/taxes.types'
-import TaxFilter from '@views/(protected)/accounting/setup/taxes/components/TaxFilter'
+import FilterTabs, { ACTIVE_STATUS_FILTERS } from '@components/app/FilterTabs'
 import PromptUserCard from '@components/app/Accounting/PromptUserCard'
 
 function TaxesPage() {
@@ -183,6 +183,8 @@ function TaxesPage() {
     }
   }
 
+  const filtersDisabled = taxes?.data?.data?.length === 0 && !areFiltersApplied
+
   return (
     <>
       {/* Toast Notification */}
@@ -227,10 +229,17 @@ function TaxesPage() {
         />
       </CustomDrawer>
 
-      {/* Search and Filter Section */}
-      <Paper sx={{ mb: 5, p: 5, gap: 5, display: 'flex' }}>
-        <TaxSearch disabled={taxes?.data?.data?.length === 0 && !areFiltersApplied} handleSearch={setSearchText} />
-        <TaxFilter disabled={taxes?.data?.data?.length === 0 && !areFiltersApplied} setTaxStatus={setStatus} />
+      <Paper sx={{ mb: 5, pt: 2 }}>
+        <FilterTabs
+          label='Tax status'
+          value={status}
+          onChange={setStatus}
+          options={ACTIVE_STATUS_FILTERS}
+          disabled={filtersDisabled}
+        />
+        <div className='p-5'>
+          <TaxSearch disabled={filtersDisabled} handleSearch={setSearchText} />
+        </div>
       </Paper>
 
       {taxes?.data?.data?.length === 0 && !areFiltersApplied ? (

@@ -5,8 +5,12 @@ import { useTheme } from '@mui/material/styles'
 import type { VerticalMenuContextProps } from '@menu/components/vertical-menu/Menu'
 
 // Component Imports
-import HorizontalNav, { Menu, MenuItem } from '@menu/horizontal-menu'
+import HorizontalNav, { Menu } from '@menu/horizontal-menu'
 import VerticalNavContent from './VerticalNavContent'
+import { GenerateHorizontalMenu } from '@/components/GenerateMenu'
+import horizontalMenuData from '@/data/navigation/horizontalMenuData'
+import { filterHorizontalMenuByAccess } from '@/data/navigation/filterMenuByAccess'
+import { useCurrentTenantAccess } from '@/features/auth/access/components/CurrentTenantAccessProvider'
 
 // Hook Imports
 import useVerticalNav from '@menu/hooks/useVerticalNav'
@@ -47,6 +51,8 @@ const HorizontalMenu = () => {
   // Hooks
   const verticalNavOptions = useVerticalNav()
   const theme = useTheme()
+  const { state } = useCurrentTenantAccess()
+  const menuData = filterHorizontalMenuByAccess(horizontalMenuData(), state)
 
   // Vars
   const { transitionDuration } = verticalNavOptions
@@ -78,33 +84,8 @@ const HorizontalMenu = () => {
           menuSectionStyles: verticalMenuSectionStyles(verticalNavOptions, theme)
         }}
       >
-        <MenuItem href='/' icon={<i className='bx-home' />}>
-          Home
-        </MenuItem>
-        <MenuItem href='/about' icon={<i className='bx-info-circle' />}>
-          About
-        </MenuItem>
+        <GenerateHorizontalMenu menuData={menuData} />
       </Menu>
-      {/* <Menu
-        rootStyles={menuRootStyles(theme)}
-        renderExpandIcon={({ level }) => <RenderExpandIcon level={level} />}
-        menuItemStyles={menuItemStyles(theme, 'bx-bxs-circle')}
-        renderExpandedMenuItemIcon={{ icon: <i className='bx-bxs-circle' /> }}
-        popoutMenuOffset={{
-          mainAxis: ({ level }) => (level && level > 0 ? 6 : 10),
-          alignmentAxis: 0
-        }}
-        verticalMenuProps={{
-          menuItemStyles: verticalMenuItemStyles(verticalNavOptions, theme),
-          renderExpandIcon: ({ open }) => (
-            <RenderVerticalExpandIcon open={open} transitionDuration={transitionDuration} />
-          ),
-          renderExpandedMenuItemIcon: { icon: <i className='bx-bxs-circle' /> },
-          menuSectionStyles: verticalMenuSectionStyles(verticalNavOptions, theme)
-        }}
-      >
-        <GenerateHorizontalMenu menuData={menuData(dictionary)} />
-      </Menu> */}
     </HorizontalNav>
   )
 }

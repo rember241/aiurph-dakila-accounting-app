@@ -1,6 +1,6 @@
 import { isAxiosError } from 'axios'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { login, logout, me } from './auth.api'
 
@@ -35,31 +35,8 @@ export function useMeQuery() {
   })
 }
 
-/**
- * Writes the login session and seeds the `me` cache immediately so protected
- * screens do not wait for an extra round-trip after the form succeeds.
- */
 export function useLoginMutation() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: (input: unknown) => login(input),
-    onSuccess: (data: LoginResponse) => {
-      // Seed the me cache immediately so consumers see the logged-in user
-      // without waiting for a network round-trip.
-      queryClient.setQueryData(AUTH_QUERY_KEYS.me, data)
-
-      // REMOVE (do not invalidate) the tenant-access cache. A broad
-      // invalidateQueries(['auth']) would mark ['auth','tenant-access'] as
-      // invalid, then trigger an immediate background refetch while the login
-      // page's CurrentTenantAccessProvider is still mounted — and a second
-      // refetch the moment the protected layout mounts. Instead, removing it
-      // lets the SSR-provided initialData on /home act as freshly fetched
-      // data; React Query records dataUpdatedAt=now and won't refetch within
-      // the 5-minute staleTime.
-      queryClient.removeQueries({ queryKey: ['auth', 'tenant-access'] })
-    }
-  })
+  return useMutation<LoginResponse, Error, unknown>({ mutationFn: login })
 }
 
 /**

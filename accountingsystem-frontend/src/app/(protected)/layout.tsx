@@ -19,7 +19,7 @@ import Navbar from '@components/layout/vertical/Navbar'
 import VerticalFooter from '@components/layout/vertical/Footer'
 import HorizontalFooter from '@components/layout/horizontal/Footer'
 import ScrollToTop from '@core/components/scroll-to-top'
-import { getServerAuthenticatedUser } from '@/lib/server-session'
+import { getServerSession } from '@/lib/server-session'
 import { getServerCurrentTenantAccess } from '@/lib/server-access'
 import { getProtectedLayoutOnboardingRedirect } from '@/lib/server-onboarding'
 
@@ -41,13 +41,13 @@ const Layout = async (props: ChildrenType) => {
   const mode = await getMode()
   const systemMode = await getSystemMode()
 
-  const user = await getServerAuthenticatedUser()
+  const session = await getServerSession()
 
-  if (!user) {
+  if (!session) {
     redirect('/login')
   }
 
-  const onboardingRedirect = getProtectedLayoutOnboardingRedirect(user)
+  const onboardingRedirect = getProtectedLayoutOnboardingRedirect(session.user)
 
   if (onboardingRedirect) {
     // Keep onboarding enforcement here so feature pages do not need to worry
@@ -58,7 +58,7 @@ const Layout = async (props: ChildrenType) => {
   const tenantAccess = await getServerCurrentTenantAccess()
 
   return (
-    <Providers direction={direction} initialTenantAccess={tenantAccess}>
+    <Providers direction={direction} sessionWindow={session.sessionWindow} initialTenantAccess={tenantAccess}>
       <LayoutWrapper
         systemMode={systemMode}
         verticalLayout={

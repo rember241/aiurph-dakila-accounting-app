@@ -21,6 +21,6 @@ final class CurrentUserController extends Controller
 
         return response()->json(
             (new CurrentUserResource($context))->resolve($request),
-        );
+        )->header('Cache-Control', 'private, no-store');
     }
 }

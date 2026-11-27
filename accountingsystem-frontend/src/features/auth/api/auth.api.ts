@@ -7,6 +7,7 @@ import {
 } from '@/features/auth/model/auth.schema'
 
 import type { LoginResponse, LogoutResponse, MeResponse } from '@/features/auth/model/auth.schema'
+import { parseSessionWindow } from '@/features/auth/model/session-status'
 import { bootstrapLaravelCsrf, laravelBrowserClient } from '@/lib/axios/auth/laravel-browser-client'
 
 /**
@@ -59,4 +60,15 @@ export async function me(): Promise<MeResponse> {
   // Surface the original (wrapped-shape) parse error for diagnostics when
   // neither shape matches — this is the most informative failure message.
   return meResponseSchema.parse(res.data)
+}
+
+export async function extendSession() {
+  const response = await laravelBrowserClient.post('/api/session/extend')
+
+  const sessionWindow = parseSessionWindow(
+    response.headers['x-session-expires-at'],
+    response.headers['x-session-warning-seconds']
+  )
+
+  if (!sessionWindow) throw new Error('The server did not confirm the extended session.')
 }

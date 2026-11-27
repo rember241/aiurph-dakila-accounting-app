@@ -3,6 +3,8 @@
 namespace Modules\Accounting\Http\Requests\ChartOfAccounts;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Modules\Accounting\Enums\AccountCategory;
 
 
 /**
@@ -30,6 +32,7 @@ class IndexAccountRequest extends FormRequest
         return [
             'q' => ['nullable', 'string', 'max:100'],
             'type' => ['nullable', 'string', 'max:50'],
+            'category' => ['nullable', Rule::enum(AccountCategory::class)],
             'status' => ['nullable', 'in:active,inactive'],
             'is_posting' => ['nullable', 'in:t,f,true,false,1,0'],
             'nested' => ['nullable', 'in:t,f,true,false,1,0'],

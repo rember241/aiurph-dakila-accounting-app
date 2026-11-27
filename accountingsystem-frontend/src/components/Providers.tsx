@@ -5,6 +5,8 @@ import type { ChildrenType, Direction } from '@core/types'
 import { VerticalNavProvider } from '@menu/contexts/verticalNavContext'
 import { SettingsProvider } from '@core/contexts/settingsContext'
 import ThemeProvider from '@components/theme'
+import type { SessionWindow } from '@/features/auth/model/session-status'
+import SessionStatusNotice from '@/features/auth/components/SessionStatusNotice'
 import CurrentTenantAccessProvider from '@/features/auth/access/components/CurrentTenantAccessProvider'
 import { createEmptyCurrentTenantAccessState } from '@/features/auth/access/model/access.schema'
 
@@ -13,16 +15,9 @@ import { getMode, getSettingsFromCookie, getSystemMode } from '@core/utils/serve
 
 type Props = ChildrenType & {
   direction: Direction
+  sessionWindow?: SessionWindow | null
   initialTenantAccess?: ReturnType<typeof createEmptyCurrentTenantAccessState>
 
-  /**
-   * Mount CurrentTenantAccessProvider and its client-side query.
-   * Set to false on public routes (login, onboarding) where there is no
-   * authenticated tenant context — omitting the provider prevents
-   * useCurrentTenantAccessQuery from running with a stale/residual
-   * current_tenant_id cookie and firing spurious /api/v1/me/access requests
-   * before the user has actually logged in.
-   */
   withTenantAccess?: boolean
 }
 
@@ -37,6 +32,7 @@ const Providers = async (props: Props) => {
   const {
     children,
     direction,
+    sessionWindow,
     initialTenantAccess = createEmptyCurrentTenantAccessState(),
     withTenantAccess = true
   } = props
@@ -50,6 +46,7 @@ const Providers = async (props: Props) => {
     <VerticalNavProvider>
       <SettingsProvider settingsCookie={settingsCookie} mode={mode}>
         <ThemeProvider direction={direction} systemMode={systemMode}>
+          {sessionWindow !== undefined && <SessionStatusNotice initialSessionWindow={sessionWindow} />}
           {withTenantAccess ? (
             <CurrentTenantAccessProvider initialState={initialTenantAccess}>{children}</CurrentTenantAccessProvider>
           ) : (

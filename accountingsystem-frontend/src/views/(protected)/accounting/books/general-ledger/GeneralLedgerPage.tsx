@@ -14,6 +14,11 @@ import { toast, ToastContainer } from 'react-toastify'
 import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid'
 
 import CustomPageHeader from '@components/app/CustomPageHeader'
+import FilterTabs from '@components/app/FilterTabs'
+import {
+  ACCOUNT_CATEGORY_FILTERS,
+  type AccountCategory
+} from '@/features/(protected)/accounting/setup/chart-of-accounts/model/accounts.types'
 import MultipleAccountSelect from '@components/app/Accounting/MultipleAccountSelect'
 import PeriodRangePicker from '@components/app/Accounting/PeriodRangePicker'
 import getAccountColumns from '@views/(protected)/accounting/books/general-ledger/componenets/GeneralLedgerAccountColumns'
@@ -29,6 +34,11 @@ import { useMeQuery } from '@/features/auth/api/auth.queries'
 import SpinnerCard from '@components/app/Accounting/SpinnerCard'
 import ReportSummaryCards from '@components/app/Accounting/ReportSummaryCards'
 import { currencyFormatter } from '@/utils/currencyFormatter'
+
+const ledgerAccountFilters = [
+  { value: '', label: 'All Accounts', icon: 'bx-list-ul' },
+  ...ACCOUNT_CATEGORY_FILTERS
+] as const
 
 function GeneralLedgerPage() {
   // Used to redirect to the COA page
@@ -46,9 +56,9 @@ function GeneralLedgerPage() {
   // Date range and selected accounts
   const [startDate, setStartDate] = useState<Dayjs>(dayjs().startOf('month'))
   const [endDate, setEndDate] = useState<Dayjs>(dayjs().endOf('month'))
-  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
-
-  const [appliedAccounts, setAppliedAccounts] = useState<string[]>([])
+  const [category, setCategory] = useState<AccountCategory | ''>('')
+  const [selectedAccountIds, setSelectedAccounts] = useState<string[] | null>(null)
+  const [appliedAccountIds, setAppliedAccounts] = useState<string[] | null>(null)
 
   // For table pagination and sorting
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 })
@@ -66,7 +76,12 @@ function GeneralLedgerPage() {
   const { data: userData } = useMeQuery()
 
   // TanStack Query hook to fetch accounts data
-  const { data: accountsData, isPending: areAccountsFetching } = useAccountsTreeQuery()
+  const {
+    data: accountsData,
+    isPending: areAccountsFetching,
+    error: accountsError,
+    refetch: fetchAccountOptions
+  } = useAccountsTreeQuery({ category: category || undefined })
 
   // Group posting accounts by their core types to be used in the account dropdown
   const accountOptions = useMemo(() => {
@@ -75,15 +90,14 @@ function GeneralLedgerPage() {
     return groupAccounts(accountsData.data)
   }, [accountsData])
 
-  // Pre-select all accounts when the options have loaded
-  useEffect(() => {
-    setSelectedAccounts(accountOptions.map(account => account.id))
-    setAppliedAccounts(accountOptions.map(account => account.id))
-  }, [accountOptions])
+  const accountIds = useMemo(() => accountOptions.map(account => account.id), [accountOptions])
+  const selectedAccounts = selectedAccountIds ?? accountIds
+  const appliedAccounts = appliedAccountIds ?? accountIds
 
   // TanStack Query hook to fetch general ledger data
   const {
-    data: ledgerData,
+    data,
+    isPlaceholderData,
     refetch: fetchLedgerData,
     error: ledgerError,
     isFetching: isLedgerDataFetching
@@ -92,6 +106,8 @@ function GeneralLedgerPage() {
     endDate: subHeaderEndDate.format('YYYY-MM-DD'),
     accountIds: appliedAccounts
   })
+
+  const ledgerData = isPlaceholderData ? undefined : data
 
   // Return the user to the first page in the table when the ledger display has been updated
   useEffect(() => {
@@ -182,6 +198,19 @@ function GeneralLedgerPage() {
         )}
       </CustomPageHeader>
 
+      <Paper sx={{ mb: 3, pt: 2 }}>
+        <FilterTabs
+          label='Filter ledger accounts'
+          value={category}
+          options={ledgerAccountFilters}
+          onChange={value => {
+            setCategory(value)
+            setSelectedAccounts(null)
+            setAppliedAccounts(null)
+          }}
+        />
+      </Paper>
+
       {/* Filter Drawer */}
       <CustomDrawer
         width={560}
@@ -241,6 +270,12 @@ function GeneralLedgerPage() {
           {/* Show spinner if accounts are still being fetched */}
           <SpinnerCard />
         </>
+      ) : accountsError ? (
+        <Alert severity='error' action={<Button onClick={() => fetchAccountOptions()}>Retry</Button>}>
+          Unable to load ledger accounts.
+        </Alert>
+      ) : accountOptions.length === 0 && category ? (
+        <Alert severity='info'>No posting accounts match this filter.</Alert>
       ) : accountOptions.length === 0 ? (
         <>
           {/* Prompt user to make an account if no accounts can be selected */}

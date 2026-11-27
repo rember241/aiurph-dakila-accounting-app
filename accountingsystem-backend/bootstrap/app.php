@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->api(append: [\App\Http\Middleware\ReportBrowserSessionExpiry::class]);
 
         // Use the application CSRF middleware without exempting login.
         $middleware->replace(

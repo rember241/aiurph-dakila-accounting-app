@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
-import { Button, Paper } from '@mui/material'
+import { Button, Paper, Stack } from '@mui/material'
 
 import { toast, ToastContainer } from 'react-toastify'
 
@@ -11,6 +11,7 @@ import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid'
 import CustomPageHeader from '@components/app/CustomPageHeader'
 import TransactionSeriesSearch from '@views/(protected)/accounting/setup/transaction-series/components/TransactionSeriesSearch'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import FilterTabs, { ACTIVE_STATUS_FILTERS } from '@components/app/FilterTabs'
 import TransactionSeriesFilter from '@views/(protected)/accounting/setup/transaction-series/components/TransactionSeriesFilter'
 import type {
   JournalNumberColumn,
@@ -185,6 +186,8 @@ function TransactionSeriesPage() {
     }
   }
 
+  const filtersDisabled = !journalNumbers?.data?.data?.length && !areFiltersApplied
+
   return (
     <>
       {/* Toast Notification */}
@@ -230,17 +233,24 @@ function TransactionSeriesPage() {
         />
       </CustomDrawer>
 
-      {/* Search and Filter Section */}
-      <Paper sx={{ mb: 5, p: 5, gap: 5, display: 'flex', alignItems: 'center' }}>
-        <TransactionSeriesSearch
-          disabled={!journalNumbers?.data?.data?.length && !areFiltersApplied}
-          setSearchText={setSearchText}
+      <Paper sx={{ mb: 5, pt: 2 }}>
+        <FilterTabs
+          label='Transaction series status'
+          value={status}
+          onChange={setStatus}
+          options={ACTIVE_STATUS_FILTERS}
+          disabled={filtersDisabled}
         />
-        <TransactionSeriesFilter
-          disabled={!journalNumbers?.data?.data?.length && !areFiltersApplied}
-          setStatus={setStatus}
-          setResetInterval={setResetInterval}
-        />
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ p: 5 }}>
+          <TransactionSeriesSearch
+            disabled={filtersDisabled}
+            setSearchText={setSearchText}
+          />
+          <TransactionSeriesFilter
+            disabled={filtersDisabled}
+            setResetInterval={setResetInterval}
+          />
+        </Stack>
       </Paper>
 
       {journalNumbers?.data?.data?.length === 0 && !areFiltersApplied ? (

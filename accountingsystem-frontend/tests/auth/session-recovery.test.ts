@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { before, test } from 'node:test'
 import { AxiosError, AxiosHeaders, type InternalAxiosRequestConfig } from 'axios'
 
+import { SESSION_STATUS_EVENT, type SessionIssue } from '../../src/features/auth/model/session-status'
+
 process.env.NEXT_PUBLIC_LARAVEL_API_URL = 'http://localhost:8000'
 let laravelBrowserClient: typeof import('../../src/lib/axios/auth/laravel-browser-client').laravelBrowserClient
 before(async () => {
@@ -117,5 +119,25 @@ test('login stops before sending credentials if the browser rejects the CSRF coo
     assert.deepEqual(paths, ['/sanctum/csrf-cookie'])
   } finally {
     Object.defineProperty(globalThis, 'document', originalDocument)
+  }
+})
+
+
+test('a successful unrelated response does not clear an outage before the session is verified', async () => {
+  const statuses: SessionIssue[] = []
+  const listener = (event: Event) => statuses.push((event as CustomEvent<SessionIssue>).detail)
+
+  window.addEventListener(SESSION_STATUS_EVENT, listener)
+
+  try {
+    laravelBrowserClient.defaults.adapter = async config => reject(config, 503)
+    await assert.rejects(laravelBrowserClient.get('/api/me'))
+
+    laravelBrowserClient.defaults.adapter = async config => ok(config)
+    await laravelBrowserClient.get('/sanctum/csrf-cookie')
+
+    assert.deepEqual(statuses, ['unavailable'])
+  } finally {
+    window.removeEventListener(SESSION_STATUS_EVENT, listener)
   }
 })

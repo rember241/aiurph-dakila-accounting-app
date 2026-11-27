@@ -5,6 +5,8 @@ namespace Modules\Accounting\Services\ChartOfAccounts;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
+use Modules\Accounting\Enums\AccountCategory;
 use Modules\Accounting\Models\ChartOfAccounts\Account;
 use Modules\Accounting\Services\CurrentTenantContext;
 
@@ -49,6 +51,7 @@ class ChartOfAccountsQueryService
         $q = trim((string)($filters['q'] ?? ''));
         $type = (string)($filters['type'] ?? '');
         $status = (string)($filters['status'] ?? '');
+        $category = AccountCategory::tryFrom((string) ($filters['category'] ?? ''));
         $isPosting = $this->parseBooleanFilter($filters, 'is_posting');
 
         return Account::query()
@@ -93,6 +96,24 @@ class ChartOfAccountsQueryService
                 });
             })
             ->when($type !== '', fn($query) => $query->where('a.type', $type))
+            ->when($category, function (Builder $query, AccountCategory $category): void {
+                $legacyNames = $category->legacyNames();
+
+                $query->where('a.type', $category->coreType())
+                    ->where(function (Builder $matches) use ($category, $legacyNames): void {
+                        $matches->whereIn('dt.code', $category->detailCodes())
+                            ->orWhereIn(DB::raw('LOWER(a.name)'), $legacyNames)
+                            ->orWhereIn(DB::raw('LOWER(p.name)'), $legacyNames);
+
+                        if ($category === AccountCategory::Bank) {
+                            // The workbook catalog groups bank accounts with cash on hand.
+                            $matches->orWhere(function (Builder $legacyBank): void {
+                                $legacyBank->where('dt.code', 'cash-on-hand-and-in-banks')
+                                    ->whereRaw('LOWER(a.name) LIKE ?', ['cib-%']);
+                            });
+                        }
+                    });
+            })
             ->when($status !== '', fn($query) => $query->where('a.status', $status))
             ->when($isPosting !== null, fn($query) => $query->where('a.is_posting', $isPosting));
     }
@@ -207,9 +228,12 @@ class ChartOfAccountsQueryService
             ->orderBy('a.name', 'asc')
             ->get();
 
+        $visibleIds = $rows->keyBy('id');
         $nodesByParent = [];
         foreach ($rows as $row) {
-            $parentKey = $row->parent_id ? (string)$row->parent_id : self::ROOT_KEY;
+            $parentKey = $row->parent_id !== null && $visibleIds->has($row->parent_id)
+                ? (string) $row->parent_id
+                : self::ROOT_KEY;
             $nodesByParent[$parentKey][] = $this->mapRowToNode($row);
         }
 

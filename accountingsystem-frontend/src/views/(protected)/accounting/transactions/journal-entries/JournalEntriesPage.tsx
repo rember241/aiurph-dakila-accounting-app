@@ -21,6 +21,7 @@ import { toast, ToastContainer } from 'react-toastify'
 
 import CustomPageHeader from '@components/app/CustomPageHeader'
 import JournalEntrySearch from '@views/(protected)/accounting/transactions/journal-entries/components/JournalEntrySearch'
+import FilterTabs from '@components/app/FilterTabs'
 import JournalEntryFilter from '@views/(protected)/accounting/transactions/journal-entries/components/JournalEntryFilter'
 import {
   useJournalEntriesQuery,
@@ -40,6 +41,13 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import PromptUserCard from '@components/app/Accounting/PromptUserCard'
 import { useCurrentTenantAccess } from '@/features/auth/access/components/CurrentTenantAccessProvider'
 import { APP_ABILITIES } from '@/features/auth/access/model/access.schema'
+
+const journalTypes = [
+  { value: '', label: 'All Entries', icon: 'bx-list-ul' },
+  { value: 'general', label: 'General', icon: 'bx-book' },
+  { value: 'adjusting', label: 'Adjusting', icon: 'bx-adjust' },
+  { value: 'closing', label: 'Closing', icon: 'bx-lock-alt' }
+] as const
 
 function JournalEntriesPage() {
   // Router hook
@@ -111,6 +119,8 @@ function JournalEntriesPage() {
     order: sortModel[0]?.sort?.toString() ?? 'desc'
   })
 
+  const filtersDisabled = !journalEntries?.data?.data?.length && !areFiltersApplied
+
   return (
     <>
       {/* Toast Notification */}
@@ -130,20 +140,23 @@ function JournalEntriesPage() {
         )}
       </CustomPageHeader>
 
-      {/* Search and Filter Section */}
-      <Paper sx={{ mb: 5, p: 5 }}>
-        <Stack direction='row' spacing={5} alignItems='center'>
+      <Paper sx={{ mb: 5, pt: 2 }}>
+        <FilterTabs
+          label='Journal entry type'
+          value={journalType}
+          onChange={setJournalType}
+          options={journalTypes}
+          disabled={filtersDisabled}
+        />
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ p: 5 }}>
           <JournalEntrySearch
-            disabled={!journalEntries?.data?.data?.length && !areFiltersApplied}
+            disabled={filtersDisabled}
             setSearchText={setSearchText}
           />
-          <Stack direction='row' spacing={5} alignItems='center' sx={{ flex: 1 }}>
-            <JournalEntryFilter
-              setJournalType={setJournalType}
-              setJournalStatus={setJournalStatus}
-              disabled={!journalEntries?.data?.data?.length && !areFiltersApplied}
-            />
-          </Stack>
+          <JournalEntryFilter
+            setJournalStatus={setJournalStatus}
+            disabled={filtersDisabled}
+          />
         </Stack>
       </Paper>
 

@@ -8,17 +8,17 @@ import BlankLayout from '@layouts/BlankLayout'
 import { getSystemMode } from '@core/utils/serverHelpers'
 import { getProtectedLayoutOnboardingRedirect } from '@/lib/server-onboarding'
 import { getServerCurrentTenantAccess } from '@/lib/server-access'
-import { getServerAuthenticatedUser } from '@/lib/server-session'
+import { getServerSession } from '@/lib/server-session'
 
 const Layout = async (props: ChildrenType) => {
   const { children } = props
-  const user = await getServerAuthenticatedUser()
+  const session = await getServerSession()
 
-  if (!user) {
+  if (!session) {
     redirect('/login')
   }
 
-  const redirectTarget = getProtectedLayoutOnboardingRedirect(user)
+  const redirectTarget = getProtectedLayoutOnboardingRedirect(session.user)
 
   if (redirectTarget) {
     redirect(redirectTarget)
@@ -29,7 +29,7 @@ const Layout = async (props: ChildrenType) => {
   const tenantAccess = await getServerCurrentTenantAccess()
 
   return (
-    <Providers direction={direction} initialTenantAccess={tenantAccess}>
+    <Providers direction={direction} sessionWindow={session.sessionWindow} initialTenantAccess={tenantAccess}>
       <BlankLayout systemMode={systemMode}>{children}</BlankLayout>
     </Providers>
   )

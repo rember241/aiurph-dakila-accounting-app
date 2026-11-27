@@ -47,6 +47,9 @@ class LoginTenantAccessTest extends TestCase
 
         $response->assertStatus(419)
             ->assertJsonPath('message', 'Login session could not be started. Open the ERP through the configured app URL and make sure it is included in SANCTUM_STATEFUL_DOMAINS.');
+
+        $this->assertGuest('web');
+        $this->assertNull($user->fresh()->last_active_at);
     }
 
     public function test_user_with_an_active_membership_can_log_in(): void

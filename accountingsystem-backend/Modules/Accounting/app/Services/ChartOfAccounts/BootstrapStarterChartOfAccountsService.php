@@ -5,6 +5,7 @@ namespace Modules\Accounting\Services\ChartOfAccounts;
 use Illuminate\Support\Facades\DB;
 use Modules\Accounting\Models\ChartOfAccounts\Account;
 use Modules\Accounting\Services\CurrentTenantContext;
+use Modules\Accounting\Support\AccountCategoryDetailTypes;
 use Modules\Accounting\Support\GeneralBusinessChartOfAccountsTemplate;
 use Modules\Users\Models\Company;
 use RuntimeException;
@@ -53,6 +54,7 @@ final class BootstrapStarterChartOfAccountsService
 
         DB::transaction(function () use ($tenantId, $canonicalEntries, &$byCode): void {
             $this->ensureStarterLookupTypes($canonicalEntries);
+            AccountCategoryDetailTypes::install();
 
             foreach ($canonicalEntries as $entry) {
                 $type = (string) $entry['type'];

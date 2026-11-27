@@ -4,24 +4,36 @@ import Paper from '@mui/material/Paper'
 
 import Button from '@mui/material/Button'
 
-import { FormControl, InputLabel, Select, Stack } from '@mui/material'
+import { FormControl, InputAdornment, InputLabel, Select, Stack } from '@mui/material'
 
 import MenuItem from '@mui/material/MenuItem'
 
 import CustomTextField from '@core/components/mui/TextField'
+import FilterTabs from '@components/app/FilterTabs'
+import { ACCOUNT_CATEGORY_FILTERS, ACCOUNT_CORE_TYPE_LABELS } from '@/features/(protected)/accounting/setup/chart-of-accounts/model/accounts.types'
 
 import type {
   AccountStatus,
-  CoreType,
+  AccountFilter,
   AccountPosting
 } from '@/features/(protected)/accounting/setup/chart-of-accounts/model/accounts.types'
+
+const accountFilters = [
+  { value: '', label: 'All Accounts', icon: 'bx-list-ul' },
+  { value: 'revenue', label: ACCOUNT_CORE_TYPE_LABELS.revenue, icon: 'bx-briefcase' },
+  { value: 'expense', label: ACCOUNT_CORE_TYPE_LABELS.expense, icon: 'bx-receipt' },
+  { value: 'asset', label: ACCOUNT_CORE_TYPE_LABELS.asset, icon: 'bx-buildings' },
+  { value: 'liability', label: ACCOUNT_CORE_TYPE_LABELS.liability, icon: 'bx-money' },
+  { value: 'equity', label: ACCOUNT_CORE_TYPE_LABELS.equity, icon: 'bx-line-chart' },
+  ...ACCOUNT_CATEGORY_FILTERS
+] as const
 
 type AccountsFilterProps = {
   searchValue: string
   onSearchChange: (value: string) => void
 
-  typeValue: CoreType | ''
-  onTypeChange: (value: CoreType | '') => void
+  accountFilter: AccountFilter
+  onAccountFilterChange: (value: AccountFilter) => void
 
   statusValue: AccountStatus | ''
   onStatusChange: (value: AccountStatus | '') => void
@@ -36,8 +48,8 @@ type AccountsFilterProps = {
 function AccountsTableActions({
   searchValue,
   onSearchChange,
-  typeValue,
-  onTypeChange,
+  accountFilter,
+  onAccountFilterChange,
   statusValue,
   onStatusChange,
   postingValue,
@@ -55,38 +67,34 @@ function AccountsTableActions({
   }
 
   return (
-    <Paper sx={{ mb: 3, p: 5 }}>
+    <Paper sx={{ mb: 3, pt: 2 }}>
+      <FilterTabs label='Filter accounts' value={accountFilter} onChange={onAccountFilterChange} options={accountFilters} />
       <Stack
-        direction={{ xs: 'column', sm: 'column', md: 'row' }}
-        justifyContent={'space-between'}
-        alignItems={'center'}
-        spacing={2}
+        direction={{ xs: 'column', md: 'row' }}
+        justifyContent='space-between'
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        gap={3}
+        sx={{ p: { xs: 3, sm: 5 } }}
       >
-        <Stack direction={'row'} alignItems={'center'} spacing={2}>
-          <i className={'bx-search'} style={{ fontSize: 24 }} />
-          <CustomTextField
-            size={'medium'}
-            value={searchValue}
-            onChange={e => onSearchChange(e.target.value)}
-            placeholder='Search an Account'
-            style={{ width: 300 }}
-          />
-        </Stack>
+        <CustomTextField
+          size='small'
+          value={searchValue}
+          onChange={e => onSearchChange(e.target.value)}
+          placeholder='Search accounts'
+          slotProps={{
+            htmlInput: { 'aria-label': 'Search accounts' },
+            input: {
+              startAdornment: (
+                <InputAdornment position='start'>
+                  <i className='bx-search' aria-hidden='true' />
+                </InputAdornment>
+              )
+            }
+          }}
+          sx={{ width: { xs: '100%', md: 300 } }}
+        />
 
-        <Stack direction='row' alignItems='center' spacing={2}>
-          {/* Account Type */}
-          <FormControl sx={{ minWidth: 120 }} size='small'>
-            <InputLabel id='type-label'>Type</InputLabel>
-            <Select labelId='type-label' value={typeValue} label='Type' onChange={e => onTypeChange(e.target.value)}>
-              <MenuItem value=''>All Types</MenuItem>
-              <MenuItem value='asset'>Asset</MenuItem>
-              <MenuItem value='liability'>Liability</MenuItem>
-              <MenuItem value='equity'>Equity</MenuItem>
-              <MenuItem value='revenue'>Revenue</MenuItem>
-              <MenuItem value='expense'>Expense</MenuItem>
-            </Select>
-          </FormControl>
-
+        <Stack direction='row' alignItems='center' flexWrap='wrap' gap={2}>
           {/* Status */}
           <FormControl sx={{ minWidth: 120 }} size='small'>
             <InputLabel id='status-label'>Status</InputLabel>
@@ -109,7 +117,6 @@ function AccountsTableActions({
               labelId='posting-label'
               label='Posting'
               value={toPostingSelectValue(postingValue)}
-              sx={{ mr: 4 }}
               onChange={e => {
                 const v = e.target.value as PostingSelectValue
 

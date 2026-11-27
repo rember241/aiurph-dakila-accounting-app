@@ -39,7 +39,7 @@ export default function CurrentTenantAccessProvider({
   initialState = createEmptyCurrentTenantAccessState(),
   children
 }: Props) {
-  const query = useCurrentTenantAccessQuery({ initialData: initialState })
+  const query = useCurrentTenantAccessQuery(initialState)
   const state = query.data ?? initialState
 
   const value = useMemo<CurrentTenantAccessContextValue>(

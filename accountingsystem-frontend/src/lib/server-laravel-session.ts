@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+import { cookies, headers as requestHeaders } from 'next/headers'
 
 import {
   CURRENT_TENANT_COOKIE,
@@ -37,18 +37,14 @@ export async function createLaravelServerHeaders(
     headers.set('Referer', process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001')
   }
 
-  const cookieStore = await cookies()
-
-  const cookieHeader = cookieStore
-    .getAll()
-    .map(cookie => `${cookie.name}=${cookie.value}`)
-    .join('; ')
+  const cookieHeader = (await requestHeaders()).get('cookie')
 
   if (cookieHeader) {
     headers.set('Cookie', cookieHeader)
   }
 
   if (options.includeTenant) {
+    const cookieStore = await cookies()
     const tenantId = parseCurrentTenantId(cookieStore.get(CURRENT_TENANT_COOKIE)?.value)
 
     if (tenantId) {

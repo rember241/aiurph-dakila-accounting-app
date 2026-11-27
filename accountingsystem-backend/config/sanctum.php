@@ -73,13 +73,7 @@ return [
     'middleware' => [
         'authenticate_session' => Laravel\Sanctum\Http\Middleware\AuthenticateSession::class,
         'encrypt_cookies' => Illuminate\Cookie\Middleware\EncryptCookies::class,
-        // Use the app's CSRF middleware (which excludes `api/login`) instead of
-        // the framework default. Sanctum resolves the CSRF middleware for the
-        // stateful SPA pipeline from THIS config value, not from the
-        // `$middleware->replace()` call in bootstrap/app.php. With the base
-        // ValidateCsrfToken here, `api/login` was still CSRF-checked despite the
-        // exclusion, so login intermittently failed with 419 "CSRF token
-        // mismatch" whenever the SPA's XSRF-TOKEN/session round-trip raced.
+        // Apply the same CSRF rules to Sanctum's stateful API and web requests.
         'validate_csrf_token' => App\Http\Middleware\VerifyCsrfToken::class,
     ],
 

@@ -1,6 +1,7 @@
 import { cache } from 'react'
 
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 
 import {
   createEmptyCurrentTenantAccessState,
@@ -11,6 +12,7 @@ import {
 } from '@/features/auth/access/model/access.schema'
 import type { CurrentTenantAccessState } from '@/features/auth/access/model/access.schema'
 import { LARAVEL_SESSION_COOKIE_NAME } from '@/lib/server-auth'
+import { getServerSession } from '@/lib/server-session'
 import { createLaravelServerHeaders } from '@/lib/server-laravel-session'
 
 const BASE = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_URL
@@ -27,9 +29,9 @@ const resolveServerCurrentTenantAccess = cache(async (): Promise<CurrentTenantAc
   const cookieStore = await cookies()
   const sessionCookie = cookieStore.get(LARAVEL_SESSION_COOKIE_NAME)?.value
 
-  if (!sessionCookie) return createEmptyCurrentTenantAccessState()
+  if (!sessionCookie) redirect('/login')
 
-  const headers = await createLaravelServerHeaders({}, { includeTenant: true })
+  const headers = await createLaravelServerHeaders()
 
   const res = await fetch(`${BASE}/api/v1/me/access`, {
     method: 'GET',
@@ -38,7 +40,12 @@ const resolveServerCurrentTenantAccess = cache(async (): Promise<CurrentTenantAc
     signal: AbortSignal.timeout(15_000)
   })
 
-  if (res.status === 401) return createEmptyCurrentTenantAccessState()
+  if (res.status === 401) redirect('/login')
+
+  if (res.status === 404 && (await getServerSession())?.user.onboarding.required) {
+    return createEmptyCurrentTenantAccessState()
+  }
+
   if (!res.ok) throw new Error('Unable to load company access. Please try again shortly.')
 
   const payload = await res.json().catch(() => null)

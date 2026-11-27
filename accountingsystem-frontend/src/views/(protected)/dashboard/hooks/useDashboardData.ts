@@ -1,33 +1,47 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { format } from 'date-fns'
+import { format, startOfMonth } from 'date-fns'
 
-import { laravelBrowserClient } from '@/lib/axios/auth/laravel-browser-client'
-import type { GenerateIncomeStatementResponse } from '@/features/(protected)/accounting/reports/income-statement/model/income-statement.types'
-import type { GenerateBalanceSheetResponse } from '@/features/(protected)/accounting/reports/balance-sheet/model/balance-sheet.types'
+import { APP_ABILITIES } from '@/features/auth/access/model/access.schema'
 import { useCurrentTenantAccess } from '@/features/auth/access/components/CurrentTenantAccessProvider'
+import { laravelBrowserClient } from '@/lib/axios/auth/laravel-browser-client'
+
+export type DashboardMonth = {
+  month: string
+  totalIncome: string
+  totalExpenses: string
+  netProfit: string
+  cashBalance: string | null
+  receivables: string | null
+  payables: string | null
+}
+
+export type RankedAccount = { id: string; name: string; amount: string }
+
+type OverviewData = {
+  months: DashboardMonth[]
+  rankings: { totalIncome: RankedAccount[]; totalExpenses: RankedAccount[] }
+}
 
 export function useDashboardData() {
-  const { tenantId, can } = useCurrentTenantAccess()
+  const { tenantId, can, canAny } = useCurrentTenantAccess()
   const today = new Date()
   const date = format(today, 'yyyy-MM-dd')
-  const startDate = format(new Date(today.getFullYear(), today.getMonth(), 1), 'yyyy-MM-dd')
-  const enabled = Boolean(tenantId) && can('accounting.read')
+  const startDate = format(startOfMonth(today), 'yyyy-MM-dd')
 
-  const options = {
-    queryKey: ['accountingDashboard', tenantId, startDate, date],
-    queryFn: async (): Promise<{ income: GenerateIncomeStatementResponse; balance: GenerateBalanceSheetResponse }> => {
-      const response = await laravelBrowserClient.get('/api/v1/accounting/dashboard', { params: { startDate, date } })
+  const metrics = useQuery({
+    queryKey: ['accountingDashboard', tenantId, date],
+    queryFn: async () => {
+      const { data } = await laravelBrowserClient.get<OverviewData>('/api/v1/accounting/dashboard', {
+        params: { startDate, date, summaryOnly: 1 }
+      })
 
-      return response.data
+      return data
     },
-    enabled,
+    enabled: Boolean(tenantId) && can(APP_ABILITIES.accountingRead),
     staleTime: 30_000
-  }
+  })
 
-  const income = useQuery({ ...options, select: data => data.income })
-  const balance = useQuery({ ...options, select: data => data.balance })
-
-  return { income, balance, date, startDate, can }
+  return { metrics, today, canAny }
 }

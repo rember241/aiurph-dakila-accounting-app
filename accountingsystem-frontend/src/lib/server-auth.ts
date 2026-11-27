@@ -6,12 +6,12 @@
 
 import type { NextResponse } from 'next/server'
 
-export const LARAVEL_SESSION_COOKIE_NAME = process.env.LARAVEL_SESSION_COOKIE_NAME!
-
 import {
   CURRENT_TENANT_COOKIE,
   parseCurrentTenantId
 } from '@/features/(protected)/users/tenants/model/current-tenant.schema'
+
+export const LARAVEL_SESSION_COOKIE_NAME = process.env.LARAVEL_SESSION_COOKIE_NAME ?? 'aiur_laravel_session'
 
 type LaravelHeaderOptions = {
   includeTenant?: boolean

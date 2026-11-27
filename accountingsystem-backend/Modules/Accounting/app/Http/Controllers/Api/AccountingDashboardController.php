@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Accounting\Models\ChartOfAccounts\Account;
+use Modules\Accounting\Services\AccountingDashboardQueryService;
 use Modules\Accounting\Services\CurrentTenantContext;
 use Modules\Accounting\Services\IncomeStatement\IncomeStatementQueryService;
 use Modules\Accounting\Services\BalanceSheet\BalanceSheetQueryService;
@@ -17,14 +18,22 @@ final class AccountingDashboardController extends Controller
         CurrentTenantContext $context,
         IncomeStatementQueryService $income,
         BalanceSheetQueryService $balance,
+        AccountingDashboardQueryService $dashboard,
     ): JsonResponse {
         $dates = $request->validate([
             'date' => ['required', 'date_format:Y-m-d'],
+            'summaryOnly' => ['sometimes', 'boolean'],
             'startDate' => ['required', 'date_format:Y-m-d', 'before_or_equal:date'],
         ]);
+        $companyId = $context->companyId();
+
+        if ($request->boolean('summaryOnly')) {
+            return response()->json($dashboard->overview($companyId, $dates['date']));
+        }
+
         // Resolve every posting account on the server, without pagination or
         // client-supplied company IDs. Reuse the financial reports' calculations.
-        $accounts = Account::query()->where('company_id', $context->companyId())
+        $accounts = Account::query()->where('company_id', $companyId)
             ->where('is_posting', true)->get(['id', 'type']);
         $incomeReport = $income->generateReport([
             'startDate' => $dates['startDate'], 'endDate' => $dates['date'],

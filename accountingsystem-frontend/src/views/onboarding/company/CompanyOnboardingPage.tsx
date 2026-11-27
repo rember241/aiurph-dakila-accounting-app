@@ -21,6 +21,7 @@ import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 
+import PageTitle from '@components/app/PageTitle'
 import Logo from '@components/layout/shared/Logo'
 import CustomAutocomplete from '@core/components/mui/Autocomplete'
 import CustomTextField from '@core/components/mui/TextField'
@@ -498,7 +499,7 @@ function CompanyOnboardingPage() {
 
                 <Stack spacing={1.25}>
                   <Chip color='primary' variant='tonal' label='Company setup' sx={{ width: 'fit-content' }} />
-                  <Typography variant='h4'>Set up your company</Typography>
+                  <PageTitle title='Set up your company' icon='bx-buildings' variant='h4' />
                   <Typography variant='body2' color='text.secondary'>
                     We&apos;ll create your company profile, set up the first company structure unit, open your first
                     fiscal year, and prepare your accounting setup so you can start using the ERP right away.
@@ -594,9 +595,11 @@ function CompanyOnboardingPage() {
               </Stack>
 
               <Stack spacing={0.75}>
-                <Typography variant='h3'>
-                  {hasCompletedSetup ? 'Company ready to launch' : (currentStep?.title ?? 'Company profile')}
-                </Typography>
+                <PageTitle
+                  component='h2'
+                  title={hasCompletedSetup ? 'Company ready to launch' : (currentStep?.title ?? 'Company profile')}
+                  icon={hasCompletedSetup ? 'bx-check-shield' : (currentStep?.iconClassName ?? 'bx-buildings')}
+                />
                 <Typography variant='body2' color='text.secondary'>
                   {hasCompletedSetup
                     ? 'Your company has been created successfully. Review the final summary, then launch the ERP when you are ready.'

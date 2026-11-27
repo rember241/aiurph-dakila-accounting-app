@@ -5,8 +5,7 @@ import {
   parseCurrentTenantId
 } from '@/features/(protected)/users/tenants/model/current-tenant.schema'
 import { clearCurrentTenantCookie } from '@/lib/current-tenant-cookie'
-
-const LARAVEL_SESSION_COOKIE_NAME = process.env.LARAVEL_SESSION_COOKIE_NAME ?? 'aiur_laravel_session'
+import { LARAVEL_SESSION_COOKIE_NAME } from '@/lib/server-auth'
 
 /**
  * Front-door guard for page requests.
@@ -24,6 +23,7 @@ export async function proxy(req: NextRequest) {
 
   const publicPath =
     pathname === '/login' ||
+    pathname === '/logout' ||
     pathname.startsWith('/images/') ||
     pathname.startsWith('/favicon') ||
     pathname === '/site.webmanifest' ||

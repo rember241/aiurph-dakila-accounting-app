@@ -15,7 +15,6 @@ export class CurrentTenantAccessApiError extends Error {
 }
 
 export async function fetchCurrentTenantAccess(): Promise<CurrentTenantAccessState> {
-  // GET requests do not require CSRF validation — do NOT call bootstrapLaravelCsrf() here.
   const res = await laravelBrowserClient.get('/api/v1/me/access')
 
   return currentTenantAccessStateSchema.parse(res.data)

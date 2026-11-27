@@ -2,6 +2,7 @@ import { cache } from 'react'
 
 import { cookies } from 'next/headers'
 
+import { parseSessionWindow } from '@/features/auth/model/session-status'
 import { authMeUserSchema, meResponseSchema } from '@/features/auth/model/auth.schema'
 import { LARAVEL_SESSION_COOKIE_NAME } from '@/lib/server-auth'
 import { createLaravelServerHeaders } from '@/lib/server-laravel-session'
@@ -15,7 +16,7 @@ const BASE = process.env.LARAVEL_API_URL ?? process.env.NEXT_PUBLIC_LARAVEL_API_
  * Protected layouts reuse this so server redirects can happen before React
  * renders the page shell.
  */
-const resolveServerAuthenticatedUser = cache(async () => {
+export const getServerSession = cache(async () => {
   if (!BASE) throw new Error('Authentication service is not configured.')
 
   const cookieStore = await cookies()
@@ -40,14 +41,19 @@ const resolveServerAuthenticatedUser = cache(async () => {
   // The endpoint has existed in both wrapped and unwrapped shapes across
   // backend revisions, so we accept the normalized form first and then fall
   // back to the direct user object for older responses.
+  const sessionWindow = parseSessionWindow(
+    res.headers.get('X-Session-Expires-At'),
+    res.headers.get('X-Session-Warning-Seconds')
+  )
+
   const parsed = meResponseSchema.safeParse(payload)
 
-  if (parsed.success) return parsed.data.user ?? null
+  if (parsed.success) return parsed.data.user ? { user: parsed.data.user, sessionWindow } : null
 
   // Fallback: some API versions return the user object directly (unwrapped).
   const direct = authMeUserSchema.safeParse(payload)
 
-  if (direct.success) return direct.data
+  if (direct.success) return { user: direct.data, sessionWindow }
 
   throw new Error('The authentication service returned an invalid response.')
 })
@@ -57,5 +63,5 @@ const resolveServerAuthenticatedUser = cache(async () => {
  * resolved user object.
  */
 export async function getServerAuthenticatedUser() {
-  return resolveServerAuthenticatedUser()
+  return (await getServerSession())?.user ?? null
 }
